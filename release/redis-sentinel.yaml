@@ -1,0 +1,214 @@
+# Redis Sentinel deployment for high availability monitoring and failover
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-sentinel-config
+  namespace: microservices-demo
+data:
+  sentinel.conf: |
+    port 26379
+    dir /tmp
+    
+    # Monitor Redis master (will be added dynamically by init container)
+    # sentinel monitor mymaster <IP> 6379 2
+    
+    # Sentinel configuration
+    sentinel down-after-milliseconds mymaster 5000
+    sentinel parallel-syncs mymaster 1
+    sentinel failover-timeout mymaster 60000
+    sentinel deny-scripts-reconfig yes
+    
+    # Security - disable protected mode for cluster communication
+    protected-mode no
+    bind 0.0.0.0
+    
+    # Logging
+    logfile ""
+    loglevel notice
+  
+  init.sh: |
+    #!/bin/sh
+    set -e
+    
+    # Get Redis pod IPs
+    echo "Getting Redis pod IPs..."
+    REDIS_0_IP=$(nslookup redis-0.redis.microservices-demo.svc.cluster.local | grep 'Address:' | tail -1 | awk '{print $2}')
+    REDIS_1_IP=$(nslookup redis-1.redis.microservices-demo.svc.cluster.local | grep 'Address:' | tail -1 | awk '{print $2}')
+    REDIS_2_IP=$(nslookup redis-2.redis.microservices-demo.svc.cluster.local | grep 'Address:' | tail -1 | awk '{print $2}')
+    
+    echo "Redis IPs: $REDIS_0_IP, $REDIS_1_IP, $REDIS_2_IP"
+    
+    # Wait for Redis pods to be ready
+    for ip in $REDIS_0_IP $REDIS_1_IP $REDIS_2_IP; do
+      echo "Waiting for Redis at $ip to be ready..."
+      until redis-cli -h $ip ping 2>/dev/null; do
+        sleep 2
+      done
+      echo "Redis at $ip is ready"
+    done
+    
+    # Use redis-0 as master and configure replicas
+    MASTER_IP=$REDIS_0_IP
+    echo "Using $MASTER_IP as master"
+    
+    # Configure redis-1 and redis-2 as replicas
+    if [ -n "$REDIS_1_IP" ]; then
+      echo "Configuring $REDIS_1_IP as replica of $MASTER_IP"
+      redis-cli -h $REDIS_1_IP REPLICAOF $MASTER_IP 6379 || true
+    fi
+    
+    if [ -n "$REDIS_2_IP" ]; then
+      echo "Configuring $REDIS_2_IP as replica of $MASTER_IP"
+      redis-cli -h $REDIS_2_IP REPLICAOF $MASTER_IP 6379 || true
+    fi
+    
+    # Update sentinel configuration with master IP
+    echo "sentinel monitor mymaster $MASTER_IP 6379 2" >> /etc/redis-sentinel/sentinel.conf
+    echo "Sentinel configuration updated with master: $MASTER_IP"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+  namespace: microservices-demo
+  labels:
+    app: redis-sentinel
+spec:
+  type: ClusterIP
+  ports:
+  - port: 26379
+    targetPort: 26379
+    name: sentinel
+  selector:
+    app: redis-sentinel
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel-headless
+  namespace: microservices-demo
+  labels:
+    app: redis-sentinel
+spec:
+  clusterIP: None
+  ports:
+  - port: 26379
+    targetPort: 26379
+    name: sentinel
+  selector:
+    app: redis-sentinel
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-sentinel
+  namespace: microservices-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis-sentinel
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      initContainers:
+      - name: config-init
+        image: redis:7-alpine
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: false
+        command:
+        - sh
+        - /scripts/init.sh
+        volumeMounts:
+        - name: config
+          mountPath: /etc/redis-sentinel
+        - name: scripts
+          mountPath: /scripts
+      containers:
+      - name: sentinel
+        image: redis:7-alpine
+        command:
+        - redis-sentinel
+        args:
+        - /etc/redis-sentinel/sentinel.conf
+        ports:
+        - containerPort: 26379
+          name: sentinel
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - name: config
+          mountPath: /etc/redis-sentinel
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          tcpSocket:
+            port: 26379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -p
+            - "26379"
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        emptyDir: {}
+      - name: scripts
+        configMap:
+          name: redis-sentinel-config
+          defaultMode: 0755
+      - name: data
+        emptyDir: {}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-sentinel-pdb
+  namespace: microservices-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: redis-sentinel

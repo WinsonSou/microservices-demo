@@ -1,0 +1,150 @@
+# Redis StatefulSet with persistent volumes for high availability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: microservices-demo
+data:
+  redis.conf: |
+    # Enable AOF persistence
+    appendonly yes
+    appendfsync everysec
+    
+    # Disable RDB persistence (we're using AOF)
+    save ""
+    
+    # Set max memory policy
+    maxmemory-policy allkeys-lru
+    
+    # Disable protected mode for cluster communication
+    protected-mode no
+    
+    # Bind to all interfaces
+    bind 0.0.0.0
+    
+    # Replica configuration
+    replica-read-only yes
+    replica-serve-stale-data yes
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: microservices-demo
+  labels:
+    app: redis
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: microservices-demo
+spec:
+  serviceName: redis
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command:
+        - redis-server
+        args:
+        - /etc/redis/redis.conf
+        - --replica-announce-ip
+        - $(POD_IP)
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 6379
+          name: redis
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: config
+          mountPath: /etc/redis
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: redis-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: nutanix-volume
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-pdb
+  namespace: microservices-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: redis

@@ -22,9 +22,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: emailservice
+  namespace: microservices-demo
   labels:
     app: emailservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: emailservice
@@ -35,6 +37,18 @@ spec:
     spec:
       serviceAccountName: emailservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - emailservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -77,6 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: emailservice
+  namespace: microservices-demo
   labels:
     app: emailservice
 spec:
@@ -92,14 +107,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: emailservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: checkoutservice
+  namespace: microservices-demo
   labels:
     app: checkoutservice
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: checkoutservice
@@ -109,6 +127,18 @@ spec:
         app: checkoutservice
     spec:
       serviceAccountName: checkoutservice
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - checkoutservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -159,6 +189,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: checkoutservice
+  namespace: microservices-demo
   labels:
     app: checkoutservice
 spec:
@@ -174,14 +205,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: checkoutservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: recommendationservice
+  namespace: microservices-demo
   labels:
     app: recommendationservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: recommendationservice
@@ -192,6 +226,18 @@ spec:
     spec:
       serviceAccountName: recommendationservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - recommendationservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -236,6 +282,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: recommendationservice
+  namespace: microservices-demo
   labels:
     app: recommendationservice
 spec:
@@ -251,14 +298,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: recommendationservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: microservices-demo
   labels:
     app: frontend
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: frontend
@@ -270,6 +320,18 @@ spec:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
       serviceAccountName: frontend
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - frontend
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -349,6 +411,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
+  namespace: microservices-demo
   labels:
     app: frontend
 spec:
@@ -364,6 +427,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend-external
+  namespace: microservices-demo
   labels:
     app: frontend
 spec:
@@ -379,14 +443,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: frontend
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: paymentservice
+  namespace: microservices-demo
   labels:
     app: paymentservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: paymentservice
@@ -397,6 +464,18 @@ spec:
     spec:
       serviceAccountName: paymentservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - paymentservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -437,6 +516,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: paymentservice
+  namespace: microservices-demo
   labels:
     app: paymentservice
 spec:
@@ -452,14 +532,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: paymentservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: productcatalogservice
+  namespace: microservices-demo
   labels:
     app: productcatalogservice
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: productcatalogservice
@@ -470,6 +553,18 @@ spec:
     spec:
       serviceAccountName: productcatalogservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - productcatalogservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -510,6 +605,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: productcatalogservice
+  namespace: microservices-demo
   labels:
     app: productcatalogservice
 spec:
@@ -525,14 +621,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: productcatalogservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cartservice
+  namespace: microservices-demo
   labels:
     app: cartservice
 spec:
+  replicas: 3
   selector:
     matchLabels:
       app: cartservice
@@ -543,6 +642,18 @@ spec:
     spec:
       serviceAccountName: cartservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - cartservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -562,7 +673,7 @@ spec:
         - containerPort: 7070
         env:
         - name: REDIS_ADDR
-          value: "redis-cart:6379"
+          value: "redis-sentinel.microservices-demo.svc.cluster.local:26379,serviceName=mymaster,tieBreaker=,abortConnect=false"
         resources:
           requests:
             cpu: 200m
@@ -584,6 +695,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cartservice
+  namespace: microservices-demo
   labels:
     app: cartservice
 spec:
@@ -599,80 +711,14 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cartservice
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis-cart
-  labels:
-    app: redis-cart
-spec:
-  selector:
-    matchLabels:
-      app: redis-cart
-  template:
-    metadata:
-      labels:
-        app: redis-cart
-    spec:
-      securityContext:
-        fsGroup: 1000
-        runAsGroup: 1000
-        runAsNonRoot: true
-        runAsUser: 1000
-      containers:
-      - name: redis
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-        image: redis:alpine
-        ports:
-        - containerPort: 6379
-        readinessProbe:
-          periodSeconds: 5
-          tcpSocket:
-            port: 6379
-        livenessProbe:
-          periodSeconds: 5
-          tcpSocket:
-            port: 6379
-        volumeMounts:
-        - mountPath: /data
-          name: redis-data
-        resources:
-          limits:
-            memory: 256Mi
-            cpu: 125m
-          requests:
-            cpu: 70m
-            memory: 200Mi
-      volumes:
-      - name: redis-data
-        emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-cart
-  labels:
-    app: redis-cart
-spec:
-  type: ClusterIP
-  selector:
-    app: redis-cart
-  ports:
-  - name: tcp-redis
-    port: 6379
-    targetPort: 6379
+  namespace: microservices-demo
+# Redis deployment removed - using Redis Sentinel setup from redis-statefulset.yaml and redis-sentinel.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: loadgenerator
+  namespace: microservices-demo
   labels:
     app: loadgenerator
 spec:
@@ -755,14 +801,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: loadgenerator
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: currencyservice
+  namespace: microservices-demo
   labels:
     app: currencyservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: currencyservice
@@ -773,6 +822,18 @@ spec:
     spec:
       serviceAccountName: currencyservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - currencyservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -814,6 +875,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: currencyservice
+  namespace: microservices-demo
   labels:
     app: currencyservice
 spec:
@@ -829,14 +891,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: currencyservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shippingservice
+  namespace: microservices-demo
   labels:
     app: shippingservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: shippingservice
@@ -846,6 +911,18 @@ spec:
         app: shippingservice
     spec:
       serviceAccountName: shippingservice
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - shippingservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -887,6 +964,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: shippingservice
+  namespace: microservices-demo
   labels:
     app: shippingservice
 spec:
@@ -902,14 +980,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: shippingservice
+  namespace: microservices-demo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: adservice
+  namespace: microservices-demo
   labels:
     app: adservice
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: adservice
@@ -920,6 +1001,18 @@ spec:
     spec:
       serviceAccountName: adservice
       terminationGracePeriodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - adservice
+              topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -962,6 +1055,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: adservice
+  namespace: microservices-demo
   labels:
     app: adservice
 spec:
@@ -977,4 +1071,5 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: adservice
+  namespace: microservices-demo
 # [END gke_release_kubernetes_manifests_microservices_demo]

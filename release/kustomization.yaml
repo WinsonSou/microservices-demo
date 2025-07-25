@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - kubernetes-manifests.yaml
+  - redis-statefulset.yaml
+  - redis-sentinel.yaml
+  - pod-disruption-budgets.yaml
+
+images:
+  # Docker Hub images
+  - name: busybox
+    newName: registry.wskn.local/library/library/busybox
+    newTag: latest
+  - name: redis
+    newName: registry.wskn.local/library/library/redis
+    newTag: 7-alpine
+
+  # Google Artifact Registry images - microservices
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/adservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/cartservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/checkoutservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/currencyservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/emailservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend
+    newName: registry.wskn.local/library/google-samples/microservices-demo/frontend
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator
+    newName: registry.wskn.local/library/google-samples/microservices-demo/loadgenerator
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/paymentservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/productcatalogservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/recommendationservice
+    newTag: v0.10.3
+  - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
+    newName: registry.wskn.local/library/google-samples/microservices-demo/shippingservice
+    newTag: v0.10.3

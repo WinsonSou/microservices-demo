@@ -27,6 +27,11 @@ metadata:
     app: emailservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: emailservice
@@ -39,16 +44,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - emailservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - emailservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -64,6 +67,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 8080
         env:
@@ -118,6 +125,11 @@ metadata:
     app: checkoutservice
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: checkoutservice
@@ -127,18 +139,17 @@ spec:
         app: checkoutservice
     spec:
       serviceAccountName: checkoutservice
+      terminationGracePeriodSeconds: 20
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - checkoutservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - checkoutservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -154,6 +165,10 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
           image: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice:v0.10.3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -216,6 +231,11 @@ metadata:
     app: recommendationservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: recommendationservice
@@ -228,16 +248,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - recommendationservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - recommendationservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -253,6 +271,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -309,6 +331,11 @@ metadata:
     app: frontend
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: frontend
@@ -320,18 +347,17 @@ spec:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
       serviceAccountName: frontend
+      terminationGracePeriodSeconds: 20
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - frontend
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - frontend
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -347,10 +373,18 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
           image: us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend:v0.10.3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
           ports:
           - containerPort: 8080
           readinessProbe:
             initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
             httpGet:
               path: "/_healthz"
               port: 8080
@@ -359,6 +393,9 @@ spec:
                 value: "shop_session-id=x-readiness-probe"
           livenessProbe:
             initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
             httpGet:
               path: "/_healthz"
               port: 8080
@@ -454,6 +491,11 @@ metadata:
     app: paymentservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: paymentservice
@@ -466,16 +508,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - paymentservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - paymentservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -491,6 +531,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 50051
         env:
@@ -543,6 +587,11 @@ metadata:
     app: productcatalogservice
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: productcatalogservice
@@ -555,16 +604,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - productcatalogservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - productcatalogservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -580,6 +627,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 3550
         env:
@@ -632,6 +683,11 @@ metadata:
     app: cartservice
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: cartservice
@@ -641,19 +697,17 @@ spec:
         app: cartservice
     spec:
       serviceAccountName: cartservice
-      terminationGracePeriodSeconds: 5
+      terminationGracePeriodSeconds: 20
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - cartservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - cartservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -669,6 +723,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 7070
         env:
@@ -683,11 +741,17 @@ spec:
             memory: 128Mi
         readinessProbe:
           initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
           grpc:
             port: 7070
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
           grpc:
             port: 7070
 ---
@@ -812,6 +876,11 @@ metadata:
     app: currencyservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: currencyservice
@@ -824,16 +893,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - currencyservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - currencyservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -849,6 +916,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - name: grpc
           containerPort: 7000
@@ -902,6 +973,11 @@ metadata:
     app: shippingservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: shippingservice
@@ -913,16 +989,14 @@ spec:
       serviceAccountName: shippingservice
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - shippingservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - shippingservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -938,6 +1012,10 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice:v0.10.3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
         ports:
         - containerPort: 50051
         env:
@@ -991,6 +1069,11 @@ metadata:
     app: adservice
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: adservice
@@ -1003,16 +1086,14 @@ spec:
       terminationGracePeriodSeconds: 5
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - adservice
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - adservice
+            topologyKey: kubernetes.io/hostname
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -1040,16 +1121,25 @@ spec:
           limits:
             cpu: 300m
             memory: 300Mi
+        startupProbe:
+          grpc:
+            port: 9555
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
         readinessProbe:
-          initialDelaySeconds: 20
-          periodSeconds: 15
           grpc:
             port: 9555
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         livenessProbe:
-          initialDelaySeconds: 20
-          periodSeconds: 15
           grpc:
             port: 9555
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service
